@@ -81,5 +81,3 @@ top5_cities <- spatial_uscities |>
 ```
 
 ### Question 4: Building maps using ggplot
-
-credentials::set_github_pat("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")
