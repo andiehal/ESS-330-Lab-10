@@ -1,0 +1,85 @@
+---
+title: "Lab 10: Distances and the Border Zone"
+subtitle: 'Ecosystem Science and Sustainability 330'
+author:
+  - name: Andie Hall
+    email: andiehal@colostate.edu
+format: html
+---
+
+## Library Code
+
+```{r}
+# spatial data science
+library(tidyverse)
+library(sf)
+library(units)
+
+# Data
+library(AOI)
+
+# Visualization
+library(gghighlight)
+library(ggrepel)
+library(knitr)
+```
+
+### Question 1: Ingesting / building sf objects from R packages and CSVs.
+
+```{r}
+# 1.1 - Define a Projection
+eqdc <- '+proj=eqdc +lat_0=40 +lon_0=-96 +lat_1=20 +lat_2=60 +x_0=0 +y_0=0 +datum=NAD83 +units=m +no_defs'
+
+# 1.2 - Get USA state boundaries
+remotes::install_github("mikejohnson51/AOI")
+
+state_boundaries <- aoi_get(state = 'conus')
+
+# 1.3 - Get country boundaries for Mexico, the United States of America, and Canada
+countries <- aoi_get(country = c("MX", "CA", "USA"))
+
+# 1.4 - Get city locations from the CSV file and removing AK, HI, and PR
+uscities <- read_csv("data/simplemaps_uscities_basicv1.90/uscities.csv")
+
+spatial_uscities <- st_as_sf(uscities, coords = c("lat", "lng"), crs = 4326)
+
+glimpse(spatial_uscities)
+
+spatial_uscities <- spatial_uscities |>
+  filter(!state_name %in% c("Alaska", "Hawaii", "Puerto Rico"))
+
+```
+
+### Question 2: Manipulating geometries and coordinate systems
+
+```{r}
+# 2.1 - Distance to USA Border (coastline or national) (km)
+# 1. Create external border
+usa_polygon <- state_boundaries |> st_union()
+usa_border <- st_cast(usa_polygon, "MULTILINESTRING")
+
+# 2. Plot to double-check
+plot(usa_border, col = "blue", lwd = 2)
+
+# 3. Calculate distance
+spatial_uscities <- spatial_uscities |>
+  mutate(distance_to_border = st_distance(geometry, usa_border),
+         distance_to_border_km = as.numeric(distance_to_border) / 1000)
+
+# 4. Find 5 farthest cities
+top5_cities <- spatial_uscities |>
+  arrange(desc(distance_to_border_km)) |>
+  slice_head(n = 5) |>
+  select(city, state_name, distance_to_border_km)
+
+```
+
+### Question 3: Calculating distances
+
+```{r}
+
+```
+
+### Question 4: Building maps using ggplot
+
+credentials::set_github_pat("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")
